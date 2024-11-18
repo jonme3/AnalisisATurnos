@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 import re
-
+ 
 # Función para analizar un archivo HTML
 def analiza_fichero(file) :
     try :
@@ -24,7 +24,7 @@ def analiza_fichero(file) :
             clases = elemento.get("class", [])
             
             # Añadir las clases que no sean "progress-bar" a la lista de acompañantes
-            clases_busqueda.update(clase for clase in clases if clase != "progress-bar")
+            clases_busqueda.update(clase for clase in clases if clase != "pro gress-bar")
 
         # Convertir el conjunto a lista si se necesita, o imprimir directamente
         clases_busqueda = list(clases_busqueda)
@@ -211,7 +211,17 @@ if uploaded_file is not None:
         st.pyplot(fig)
 
     df_agrupado = df.groupby('fecha')
-
+    # CSS para ajustar el ancho de la tabla
+    st.markdown(
+        """
+        <style>
+        .dataframe {
+            width: 100% !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     # Mostrar el DataFrame en Streamlit
     st.write("Datos agrupados por fecha:")
     st.dataframe(df_agrupado)
