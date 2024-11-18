@@ -171,7 +171,16 @@ uploaded_file = st.sidebar.file_uploader("Selecciona un archivo html", type=["ht
 print(uploaded_file)
 # Crear el panel principal a la derecha
 if uploaded_file is not None:
-    
+    st.markdown(
+        """
+        <style>
+        .main {
+            max-width: 100% !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     error, df = analiza_fichero(uploaded_file)
 
     # Mostrar los datos en el panel derecho
