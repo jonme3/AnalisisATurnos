@@ -161,6 +161,16 @@ def analiza_fichero(file) :
         return True, pd.DataFrame()  # Devuelve True para error y un DataFrame vacío#hasta aqui la función que analiza el fichero html descargado
 
 st.set_page_config(layout="wide")
+st.markdown(
+    """
+    <style>
+    .main {
+        max-width: 80% !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 # Título de la aplicación
 st.title("Visor de Datos ATurnos")
 
@@ -172,16 +182,6 @@ uploaded_file = st.sidebar.file_uploader("Selecciona un archivo html", type=["ht
 print(uploaded_file)
 # Crear el panel principal a la derecha
 if uploaded_file is not None:
-    st.markdown(
-        """
-        <style>
-        .main {
-            max-width: 100% !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
     error, df = analiza_fichero(uploaded_file)
 
     # Mostrar los datos en el panel derecho
