@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.express as px
 from bs4 import BeautifulSoup
 import re
  
@@ -254,11 +255,34 @@ if uploaded_file is not None:
         return [f"background-color: {color}"] * len(row)
 
     # Mostrar la tabla con filtros y estilos aplicados
-    st.write("### Datos filtrados")
-    styled_table = filtered_df.style.apply(apply_styles, axis=1)
-    st.write(styled_table.to_html(), unsafe_allow_html=True)
+    #st.write("### Datos filtrados")
+    #styled_table = filtered_df.style.apply(apply_styles, axis=1)
+    #st.write(styled_table.to_html(), unsafe_allow_html=True)
 
+    # Configuración del gráfico
+    fig = px.timeline(
+        df,
+        x_start="Inicio",
+        x_end="Fin",
+        y="fecha",
+        color="tipo",
+        title="Intervalos por fecha y tipo",
+        labels={"fecha": "fecha", "tipo": "tipo"},
+    )
 
+    # Actualización del eje horizontal
+    fig.update_layout(
+        xaxis=dict(
+            title="Horas del día",
+            tickformat="%H:%M",
+            dtick=3600 * 1000,  # Intervalo de ticks cada hora
+        ),
+        yaxis_title="Fechas",
+        bargap=0.5,
+    )
+
+    # Mostrar en Streamlit
+    st.plotly_chart(fig, use_container_width=True)
 
 else:
     st.write("Por favor, selecciona un archivo desde la barra lateral para cargar los datos.")
