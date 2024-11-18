@@ -198,7 +198,7 @@ if uploaded_file is not None:
     columna_x = st.sidebar.selectbox("Selecciona la columna para el eje X", columnas_numericas)
     columna_y = st.sidebar.selectbox("Selecciona la columna para el eje Y", columnas_numericas)
 
-    '''
+    """
     if columna_x and columna_y:
         # Crear gráfico
         st.subheader("Gráfico de Datos")
@@ -210,25 +210,13 @@ if uploaded_file is not None:
         
         # Mostrar gráfico
         st.pyplot(fig)
-    '''
-    
-    df_agrupado = df.groupby('fecha')
+    """
 
-    # CSS para ajustar el ancho de la tabla
-    st.markdown(
-        """
-        <style>
-        .dataframe {
-            width: 100% !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    df_agrupado = df.groupby('fecha')
 
     # Mostrar el DataFrame en Streamlit
     st.write("Datos agrupados por fecha:")
-    st.dataframe(df_agrupado)
+    st.dataframe(df_agrupado, use_container_width=True)
 
 
     filters = {}
