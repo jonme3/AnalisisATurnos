@@ -4,3 +4,4 @@ numpy
 matplotlib
 bs4
 lxml
+plotly
