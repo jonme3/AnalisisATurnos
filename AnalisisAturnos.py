@@ -160,6 +160,7 @@ def analiza_fichero(file) :
         print(f"Error al abrir o analizar el archivo: {e}")
         return True, pd.DataFrame()  # Devuelve True para error y un DataFrame vacío#hasta aqui la función que analiza el fichero html descargado
 
+st.set_page_config(layout="wide")
 # Título de la aplicación
 st.title("Visor de Datos ATurnos")
 
