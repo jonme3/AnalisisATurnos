@@ -211,6 +211,7 @@ if uploaded_file is not None:
         st.pyplot(fig)
 
     df_agrupado = df.groupby('fecha')
+    
     # CSS para ajustar el ancho de la tabla
     st.markdown(
         """
@@ -222,6 +223,7 @@ if uploaded_file is not None:
         """,
         unsafe_allow_html=True
     )
+
     # Mostrar el DataFrame en Streamlit
     st.write("Datos agrupados por fecha:")
     st.dataframe(df_agrupado)
