@@ -261,6 +261,11 @@ if uploaded_file is not None:
     #st.write(styled_table.to_html(), unsafe_allow_html=True)
 
     # Configuración del gráfico
+    height_per_row = 30  # Altura por fila (ajusta este valor según necesites)
+    base_height = 400    # Altura base mínima
+    chart_height = base_height + len(df["fecha"].unique()) * height_per_row
+
+
     fig = px.timeline(
         df,
         x_start="Inicio",
@@ -273,10 +278,11 @@ if uploaded_file is not None:
 
     # Actualización del eje horizontal
     fig.update_layout(
+        height=chart_height,  # Ajustar altura del gráfico dinámicamente
         xaxis=dict(
             title="Horas del día",
             tickformat="%H:%M",
-            dtick=3600 * 100,  # Intervalo de ticks cada hora
+            dtick=3600,  # Intervalo de ticks cada hora
         ),
         yaxis_title="Fechas",
         bargap=0.5,
