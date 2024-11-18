@@ -176,7 +176,7 @@ if uploaded_file is not None:
 
     # Mostrar los datos en el panel derecho
     st.subheader("Datos cargados:")
-    st.dataframe(df)
+    st.dataframe(df, use_container_width=True)
 
     # Selección de columnas para filtrar y graficar
     columnas_numericas = df.select_dtypes(include='number').columns.tolist()
@@ -191,7 +191,7 @@ if uploaded_file is not None:
         if valores_filtro:
             df = df[df[columna_filtro].isin(valores_filtro)]
             st.write(f"Datos filtrados por {columna_filtro}:")
-            st.dataframe(df)
+            st.dataframe(df, use_container_width=True)
 
     # Selección de columnas para gráficos
     st.sidebar.subheader("Opciones de Gráficos")
