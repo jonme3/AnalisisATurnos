@@ -149,7 +149,8 @@ def analiza_fichero(file) :
         #df['t_trabajo'] =  (df['Fin'] - df['Inicio']).dt.total_seconds() / 60
 
         columnas_a_eliminar = ['row_id', 'line_1', 'line_2', 'line_3', 'line_4', 'line_5', 'line_6', 'line_7', 'line_8', 'line_9', 'line_10', 'line_11', 'Inicio_str', 'Fin_str']
-
+        df["Inicio"] = df["Inicio"].dt.strftime("%H:%M")  # Formato HH:MM
+        df["Fin"] = df["Fin"].dt.strftime("%H:%M")        # Formato HH:MM
         # Eliminar las columnas del DataFrame
         df = df.drop(columns=columnas_a_eliminar)
 
@@ -275,7 +276,7 @@ if uploaded_file is not None:
         xaxis=dict(
             title="Horas del día",
             tickformat="%H:%M",
-            dtick=3600 * 1000,  # Intervalo de ticks cada hora
+            dtick=3600 * 100,  # Intervalo de ticks cada hora
         ),
         yaxis_title="Fechas",
         bargap=0.5,
