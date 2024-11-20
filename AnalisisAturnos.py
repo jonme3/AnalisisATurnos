@@ -153,7 +153,7 @@ def analiza_fichero(file) :
         df["Fin"] = df["Fin"].dt.strftime("%H:%M")        # Formato HH:MM
         # Eliminar las columnas del DataFrame
         df = df.drop(columns=columnas_a_eliminar)
-
+        print(df.head(50))
 
         return False, df
 
@@ -163,6 +163,7 @@ def analiza_fichero(file) :
         return True, pd.DataFrame()  # Devuelve True para error y un DataFrame vacío#hasta aqui la función que analiza el fichero html descargado
 
 st.set_page_config(layout="wide")
+#Para que las tablas ocupe todo el espacio
 st.markdown(
     """
     <style>
@@ -175,7 +176,6 @@ st.markdown(
 )
 # Título de la aplicación
 st.title("Visor de Datos ATurnos")
-
 # Barra lateral para la selección del archivo y opciones de filtrado
 st.sidebar.header("Opciones")
 
@@ -184,6 +184,7 @@ uploaded_file = st.sidebar.file_uploader("Selecciona un archivo html", type=["ht
 print(uploaded_file)
 # Crear el panel principal a la derecha
 if uploaded_file is not None:
+    st.session_state.show_image = False
     error, df = analiza_fichero(uploaded_file)
 
     # Mostrar los datos en el panel derecho
@@ -223,14 +224,6 @@ if uploaded_file is not None:
         # Mostrar gráfico
         st.pyplot(fig)
     
-
-    df_agrupado = df.groupby('fecha')
-
-    # Mostrar el DataFrame en Streamlit
-    st.write("Datos agrupados por fecha:")
-    st.dataframe(df_agrupado, use_container_width=True)
-
-
     filters = {}
     colors = {}
 
@@ -255,41 +248,14 @@ if uploaded_file is not None:
         color = colors.get(row["tipo"], "#ffffff")  # Obtener el color para el tipo
         return [f"background-color: {color}"] * len(row)
 
-    # Mostrar la tabla con filtros y estilos aplicados
-    #st.write("### Datos filtrados")
-    #styled_table = filtered_df.style.apply(apply_styles, axis=1)
-    #st.write(styled_table.to_html(), unsafe_allow_html=True)
 
-    # Configuración del gráfico
-    height_per_row = 30  # Altura por fila (ajusta este valor según necesites)
-    base_height = 400    # Altura base mínima
-    chart_height = base_height + len(df["fecha"].unique()) * height_per_row
-
-
-    fig = px.timeline(
-        df,
-        x_start="Inicio",
-        x_end="Fin",
-        y="fecha",
-        color="tipo",
-        title="Intervalos por fecha y tipo",
-        labels={"fecha": "fecha", "tipo": "tipo"},
-    )
-
-    # Actualización del eje horizontal
-    fig.update_layout(
-        height=chart_height,  # Ajustar altura del gráfico dinámicamente
-        xaxis=dict(
-            title="Horas del día",
-            tickformat="%H:%M",
-            dtick=3600,  # Intervalo de ticks cada hora
-        ),
-        yaxis_title="Fechas",
-        bargap=0.5,
-    )
-
-    # Mostrar en Streamlit
-    st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.write("Por favor, selecciona un archivo desde la barra lateral para cargar los datos.")
+    st.subheader("Descarga la página de ATurnos eligiendo los meses que quieres importar")
+    st.write("Entra en la página de ATurnos")
+    st.write("https://www.aturnos.com/puntos_detalle_trabajador")
+    st.write("Selecciona las fechas de las que quieras procesar los fichajes")
+    st.image('./CapturaEjemplo.png', caption='Mi Imagen PNG', use_container_width=True)
+    st.write("Guarda la página web en tu ordenador (Ctrl+s)") 
+    st.write("Carga el fichero usando el menu de la barra lateral")
+     
