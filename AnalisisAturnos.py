@@ -148,7 +148,7 @@ def analiza_fichero(file) :
         df['metodo_fin'] = df['metodo_fin'].str.replace(r"Tipo: ", "", regex=True)
 
         #Cálculo de tiempo trabajado
-        #df['t_trabajo'] =  (df['Fin'] - df['Inicio']).dt.total_seconds() / 60
+        df['horas'] =  (df['Fin'] - df['Inicio']).dt.total_seconds() / 3600
 
         columnas_a_eliminar = ['patron_hora', 'row_id', 'line_1', 'line_2', 'line_3', 'line_4', 'line_5', 'line_6', 'line_7', 'line_8', 'line_9', 'line_10', 'line_11', 'Inicio_str', 'Fin_str']
         df["Inicio"] = df["Inicio"].dt.strftime("%H:%M")  # Formato HH:MM
@@ -201,6 +201,9 @@ if uploaded_file is not None:
     df_filtered = df
         
     st.dataframe(df_filtered, use_container_width=True)
+    totales = df.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
+    st.dataframe(totales, use_container_width=True)
+
         
     filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique())
     #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
@@ -216,6 +219,8 @@ if uploaded_file is not None:
         df_filtered = df[df["class"].isin(filtro_clases)]
         st.write(f"Datos filtrados por class")
         st.dataframe(df_filtered, use_container_width=True)
+        totales_filt = df_filtered.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
+        st.dataframe(totales_filt, use_container_width=True)
 
     # Selección de columnas para gráficos
     def no_comments():
