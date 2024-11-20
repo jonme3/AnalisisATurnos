@@ -189,11 +189,17 @@ if uploaded_file is not None:
 
     # Mostrar los datos en el panel derecho
     st.subheader("Datos cargados:")
-    st.dataframe(df, use_container_width=True)
 
     # Selección de columnas para filtrar y graficar
-    columnas_numericas = df.select_dtypes(include='number').columns.tolist()
-    columnas = df.columns.tolist()
+    solo_fichajes = st.sidebar.checkbox("Mostrar solo fichajes")
+    if solo_fichajes is True:
+        df_filtered = df[df.class=="time-checkin"]
+    else: 
+        df_filtered = df
+        
+    st.dataframe(df_filtered, use_container_width=True)
+    #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
+    #columnas = df.columns.tolist()
 
     # Selección de columna para filtrar
     columna_filtro = st.sidebar.selectbox("Selecciona la columna para filtrar", columnas)
