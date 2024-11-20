@@ -62,7 +62,7 @@ def analiza_fichero(file) :
         df = pd.DataFrame(data)
 
         # Mostrar el DataFrame
-        #print(df.columns)
+        print(df.head(20))
 
         df['fecha'] = pd.to_datetime(df['row_id'].str.replace('row-', ''))
 
@@ -70,26 +70,28 @@ def analiza_fichero(file) :
 
         df['tipo'] = df['line_1'].where(df['class'].isin(clases), "fichaje")
 
+        # Patrón de búsqueda con regex
+        patron = r"\b\d{2}:\d{2} - \d{2}:\d{2}\b"
+        columnas = ["line_1", "line_2", "line_3", "line_4"]
+        # Función para identificar la columna que contiene el patrón
+        def identificar_columna_y_dividir(row):
+            for col in columnas:
+                if pd.notna(row[col]) and re.search(patron, str(row[col])):
+                    # Dividir el valor encontrado en 'Inicio' y 'Fin'
+                    tiempos = row[col].split(" - ")
+                    row["Inicio_str"] = tiempos[0]
+                    row["Fin_str"] = tiempos[1]
+                    row["patron_hora"] = col  # Indicar la columna que contiene el patrón
+                    return row  # Retorna la fila actualizada
+            # Si no se encuentra el patrón, asignar valores nulos
+            row["Inicio_str"] = None
+            row["Fin_str"] = None
+            row["patron_hora"] = None
+            return row
 
-        # Filtrar las filas donde 'class' sea 'planned'
-        mask = (df['class'].isin(clases)) & (df['line_3'].notna())
-        # Crear un DataFrame intermedio con el resultado del split
-        split_df = df.loc[mask, 'line_3'].str.split(' - ', expand=True)
-        df.loc[mask, 'Inicio_str'] = split_df[0]
-        df.loc[mask, 'Fin_str'] = split_df[1]
-        mask = (df['class'].isin(clases)) & (df['line_3'].isna())
-        split_df = df.loc[mask, 'line_2'].str.split(' - ', expand=True)
-        df.loc[mask, 'Inicio_str'] = split_df[0]
-        df.loc[mask, 'Fin_str'] = split_df[1]
-        #mask = df['class'] == 'time-checkin'
-        mask = df['class'].isin(['time-checkin', 'not-close'])
-        # Crear un DataFrame intermedio con el resultado del split
-        split_df = df.loc[mask, 'line_1'].str.split(' - ', expand=True)
-
-        # Asignar las columnas 'Inicio' y 'Fin' usando el DataFrame intermedio
-        df.loc[mask, 'Inicio_str'] = split_df[0]
-        df.loc[mask, 'Fin_str'] = split_df[1]
-        print(df['fecha'].astype(str) + " " + df['Inicio_str'])
+        # Aplicar la función fila por fila
+        df = df.apply(identificar_columna_y_dividir, axis=1)
+        print(df.head(20))
 
         df['Inicio'] = pd.to_datetime(df['fecha'].astype(str) + " " + df['Inicio_str'], errors='coerce', format='%Y-%m-%d %H:%M')
         df['Fin'] = pd.to_datetime(df['fecha'].astype(str) + " " + df['Fin_str'], errors='coerce', format='%Y-%m-%d %H:%M')
@@ -148,7 +150,7 @@ def analiza_fichero(file) :
         #Cálculo de tiempo trabajado
         #df['t_trabajo'] =  (df['Fin'] - df['Inicio']).dt.total_seconds() / 60
 
-        columnas_a_eliminar = ['row_id', 'line_1', 'line_2', 'line_3', 'line_4', 'line_5', 'line_6', 'line_7', 'line_8', 'line_9', 'line_10', 'line_11', 'Inicio_str', 'Fin_str']
+        columnas_a_eliminar = ['patron_hora', 'row_id', 'line_1', 'line_2', 'line_3', 'line_4', 'line_5', 'line_6', 'line_7', 'line_8', 'line_9', 'line_10', 'line_11', 'Inicio_str', 'Fin_str']
         df["Inicio"] = df["Inicio"].dt.strftime("%H:%M")  # Formato HH:MM
         df["Fin"] = df["Fin"].dt.strftime("%H:%M")        # Formato HH:MM
         # Eliminar las columnas del DataFrame
@@ -191,45 +193,51 @@ if uploaded_file is not None:
     st.subheader("Datos cargados:")
 
     # Selección de columnas para filtrar y graficar
-    solo_fichajes = st.sidebar.checkbox("Mostrar solo fichajes")
-    if solo_fichajes is True:
-        df_filtered = df[df.class=="time-checkin"]
-    else: 
-        df_filtered = df
+    #solo_fichajes = st.sidebar.checkbox("Mostrar solo fichajes")
+    #if solo_fichajes is True:
+    #    df_filtered = df[df["class"]=="time-checkin"]
+    #else: 
+    #    df_filtered = df
+    df_filtered = df
         
     st.dataframe(df_filtered, use_container_width=True)
+        
+    filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique())
     #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
     #columnas = df.columns.tolist()
 
     # Selección de columna para filtrar
-    columna_filtro = st.sidebar.selectbox("Selecciona la columna para filtrar", columnas)
-    if columna_filtro:
-        valores_filtro = st.sidebar.multiselect(f"Selecciona valores de '{columna_filtro}'", df[columna_filtro].unique())
+    #columna_filtro = st.sidebar.selectbox("Selecciona la columna para filtrar", columnas)
+    #if columna_filtro:
+    #    valores_filtro = st.sidebar.multiselect(f"Selecciona valores de '{columna_filtro}'", df[columna_filtro].unique())
         
-        # Aplicar filtro
-        if valores_filtro:
-            df = df[df[columna_filtro].isin(valores_filtro)]
-            st.write(f"Datos filtrados por {columna_filtro}:")
-            st.dataframe(df, use_container_width=True)
+    # Aplicar filtro
+    if filtro_clases:
+        df_filtered = df[df["class"].isin(filtro_clases)]
+        st.write(f"Datos filtrados por class")
+        st.dataframe(df_filtered, use_container_width=True)
 
     # Selección de columnas para gráficos
-    st.sidebar.subheader("Opciones de Gráficos")
-    columna_x = st.sidebar.selectbox("Selecciona la columna para el eje X", columnas_numericas)
-    columna_y = st.sidebar.selectbox("Selecciona la columna para el eje Y", columnas_numericas)
-
-    
-    if columna_x and columna_y:
-        # Crear gráfico
-        st.subheader("Gráfico de Datos")
-        fig, ax = plt.subplots()
-        ax.plot(df[columna_x], df[columna_y], marker='o', linestyle='-')
-        ax.set_xlabel(columna_x)
-        ax.set_ylabel(columna_y)
-        ax.set_title(f"Gráfico de {columna_y} vs {columna_x}")
+    def no_comments():
+        '''
+        st.sidebar.subheader("Opciones de Gráficos")
         
-        # Mostrar gráfico
-        st.pyplot(fig)
-    
+        columna_x = st.sidebar.selectbox("Selecciona la columna para el eje X", columnas_numericas)
+        columna_y = st.sidebar.selectbox("Selecciona la columna para el eje Y", columnas_numericas)
+
+        
+        if columna_x and columna_y:
+            # Crear gráfico
+            st.subheader("Gráfico de Datos")
+            fig, ax = plt.subplots()
+            ax.plot(df[columna_x], df[columna_y], marker='o', linestyle='-')
+            ax.set_xlabel(columna_x)
+            ax.set_ylabel(columna_y)
+            ax.set_title(f"Gráfico de {columna_y} vs {columna_x}")
+            
+            # Mostrar gráfico
+            st.pyplot(fig)
+        
     filters = {}
     colors = {}
 
@@ -253,7 +261,7 @@ if uploaded_file is not None:
     def apply_styles(row):
         color = colors.get(row["tipo"], "#ffffff")  # Obtener el color para el tipo
         return [f"background-color: {color}"] * len(row)
-
+        '''
 
 
 else:
