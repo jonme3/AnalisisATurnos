@@ -71,7 +71,7 @@ def analiza_fichero(file) :
         df['tipo'] = df['line_1'].where(df['class'].isin(clases), "fichaje")
 
         # Patrón de búsqueda con regex
-        patron = r"\b\d{2}:\d{2} - \d{2}:\d{2}\b"
+        patron = r"\b\d{2}:\d{2} - "#\d{2}:\d{2}\b"
         columnas = ["line_1", "line_2", "line_3", "line_4"]
         # Función para identificar la columna que contiene el patrón
         def identificar_columna_y_dividir(row):
