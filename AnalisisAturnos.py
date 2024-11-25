@@ -153,6 +153,9 @@ def analiza_fichero(file) :
         columnas_a_eliminar = ['patron_hora', 'row_id', 'line_1', 'line_2', 'line_3', 'line_4', 'line_5', 'line_6', 'line_7', 'line_8', 'line_9', 'line_10', 'line_11', 'Inicio_str', 'Fin_str']
         df["Inicio"] = df["Inicio"].dt.strftime("%H:%M")  # Formato HH:MM
         df["Fin"] = df["Fin"].dt.strftime("%H:%M")        # Formato HH:MM
+        df['Semana'] = df['fecha'].dt.isocalendar().week
+        df['combi'] = df['class'] + '_' + df['tipo']
+
         # Eliminar las columnas del DataFrame
         df = df.drop(columns=columnas_a_eliminar)
         print(df.head(50))
@@ -202,9 +205,16 @@ if uploaded_file is not None:
         
     st.dataframe(df_filtered, use_container_width=True)
     totales = df.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
-    st.dataframe(totales, use_container_width=True)
-
-        
+    st.dataframe(totales)
+    tabla_pivot_filt = df_filtered.pivot_table(
+        values='horas',  # Columna a agregar
+        index='Semana',  # Filas: número de semana
+        columns='combi',  # Columnas: combinaciones únicas
+        aggfunc='sum',  # Agregación: suma
+        fill_value=0  # Rellenar valores faltantes con 0
+    )
+    st.dataframe(tabla_pivot_filt)
+       
     filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique())
     #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
     #columnas = df.columns.tolist()
@@ -213,14 +223,24 @@ if uploaded_file is not None:
     #columna_filtro = st.sidebar.selectbox("Selecciona la columna para filtrar", columnas)
     #if columna_filtro:
     #    valores_filtro = st.sidebar.multiselect(f"Selecciona valores de '{columna_filtro}'", df[columna_filtro].unique())
-        
+    st.subheader("Tablas aplicando el filtro seleccionado")
+
     # Aplicar filtro
     if filtro_clases:
         df_filtered = df[df["class"].isin(filtro_clases)]
         st.write(f"Datos filtrados por class")
         st.dataframe(df_filtered, use_container_width=True)
         totales_filt = df_filtered.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
-        st.dataframe(totales_filt, use_container_width=True)
+        # Crear una tabla dinámica
+        tabla_pivot_filt = df_filtered.pivot_table(
+            values='horas',  # Columna a agregar
+            index='Semana',  # Filas: número de semana
+            columns='combi',  # Columnas: combinaciones únicas
+            aggfunc='sum',  # Agregación: suma
+            fill_value=0  # Rellenar valores faltantes con 0
+        )
+        st.dataframe(totales_filt)
+        st.dataframe(tabla_pivot_filt)
 
     # Selección de columnas para gráficos
     def no_comments():
