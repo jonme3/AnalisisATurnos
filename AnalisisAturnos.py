@@ -191,49 +191,27 @@ uploaded_file = st.sidebar.file_uploader("Selecciona un archivo html", type=["ht
 if uploaded_file is not None:
     st.session_state.show_image = False
     error, df = analiza_fichero(uploaded_file)
+    required_columns = ['class', 'tipo']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    print(missing_columns)
+    if (df.empty) or (error==True) or (len(missing_columns) > 0):
+        st.subheader("El fichero cargado no es correcto. No contiene la información requerida")
+    else :
+        # Mostrar los datos en el panel derecho
+        st.subheader("Datos cargados:")
 
-    # Mostrar los datos en el panel derecho
-    st.subheader("Datos cargados:")
-
-    # Selección de columnas para filtrar y graficar
-    #solo_fichajes = st.sidebar.checkbox("Mostrar solo fichajes")
-    #if solo_fichajes is True:
-    #    df_filtered = df[df["class"]=="time-checkin"]
-    #else: 
-    #    df_filtered = df
-    df_filtered = df
-    st.dataframe(df_filtered, use_container_width=True)
-
-    st.write("Sumas totales agrupadas")
-    totales = df.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
-    st.dataframe(totales)
-    tabla_pivot_filt = df_filtered.pivot_table(
-        values='horas',  # Columna a agregar
-        index='Semana',  # Filas: número de semana
-        columns='combi',  # Columnas: combinaciones únicas
-        aggfunc='sum',  # Agregación: suma
-        fill_value=0  # Rellenar valores faltantes con 0
-    )
-    st.write("Totales por semana")
-    st.dataframe(tabla_pivot_filt)
-       
-    filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique(), default=["time-checkin"])
-    #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
-    #columnas = df.columns.tolist()
-
-    # Selección de columna para filtrar
-    #columna_filtro = st.sidebar.selectbox("Selecciona la columna para filtrar", columnas)
-    #if columna_filtro:
-    #    valores_filtro = st.sidebar.multiselect(f"Selecciona valores de '{columna_filtro}'", df[columna_filtro].unique())
-    st.subheader("Tablas aplicando el filtro seleccionado")
-
-    # Aplicar filtro
-    if filtro_clases:
-        df_filtered = df[df["class"].isin(filtro_clases)]
-        st.write(f"Datos filtrados por class")
+        # Selección de columnas para filtrar y graficar
+        #solo_fichajes = st.sidebar.checkbox("Mostrar solo fichajes")
+        #if solo_fichajes is True:
+        #    df_filtered = df[df["class"]=="time-checkin"]
+        #else: 
+        #    df_filtered = df
+        df_filtered = df
         st.dataframe(df_filtered, use_container_width=True)
-        totales_filt = df_filtered.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
-        # Crear una tabla dinámica
+
+        st.write("Sumas totales agrupadas")
+        totales = df.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
+        st.dataframe(totales)
         tabla_pivot_filt = df_filtered.pivot_table(
             values='horas',  # Columna a agregar
             index='Semana',  # Filas: número de semana
@@ -241,56 +219,83 @@ if uploaded_file is not None:
             aggfunc='sum',  # Agregación: suma
             fill_value=0  # Rellenar valores faltantes con 0
         )
-        st.write("Sumas totales agrupadas")
-        st.dataframe(totales_filt)
         st.write("Totales por semana")
         st.dataframe(tabla_pivot_filt)
-
-    # Selección de columnas para gráficos
-    def no_comments():
-        '''
-        st.sidebar.subheader("Opciones de Gráficos")
         
-        columna_x = st.sidebar.selectbox("Selecciona la columna para el eje X", columnas_numericas)
-        columna_y = st.sidebar.selectbox("Selecciona la columna para el eje Y", columnas_numericas)
+        filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique(), default=["time-checkin"])
+        #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
+        #columnas = df.columns.tolist()
 
-        
-        if columna_x and columna_y:
-            # Crear gráfico
-            st.subheader("Gráfico de Datos")
-            fig, ax = plt.subplots()
-            ax.plot(df[columna_x], df[columna_y], marker='o', linestyle='-')
-            ax.set_xlabel(columna_x)
-            ax.set_ylabel(columna_y)
-            ax.set_title(f"Gráfico de {columna_y} vs {columna_x}")
+        # Selección de columna para filtrar
+        #columna_filtro = st.sidebar.selectbox("Selecciona la columna para filtrar", columnas)
+        #if columna_filtro:
+        #    valores_filtro = st.sidebar.multiselect(f"Selecciona valores de '{columna_filtro}'", df[columna_filtro].unique())
+        st.subheader("Tablas aplicando el filtro seleccionado")
+
+        # Aplicar filtro
+        if filtro_clases:
+            df_filtered = df[df["class"].isin(filtro_clases)]
+            st.write(f"Datos filtrados por class")
+            st.dataframe(df_filtered, use_container_width=True)
+            totales_filt = df_filtered.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
+            # Crear una tabla dinámica
+            tabla_pivot_filt = df_filtered.pivot_table(
+                values='horas',  # Columna a agregar
+                index='Semana',  # Filas: número de semana
+                columns='combi',  # Columnas: combinaciones únicas
+                aggfunc='sum',  # Agregación: suma
+                fill_value=0  # Rellenar valores faltantes con 0
+            )
+            st.write("Sumas totales agrupadas")
+            st.dataframe(totales_filt)
+            st.write("Totales por semana")
+            st.dataframe(tabla_pivot_filt)
+
+        # Selección de columnas para gráficos
+        def no_comments():
+            '''
+            st.sidebar.subheader("Opciones de Gráficos")
             
-            # Mostrar gráfico
-            st.pyplot(fig)
-        
-    filters = {}
-    colors = {}
+            columna_x = st.sidebar.selectbox("Selecciona la columna para el eje X", columnas_numericas)
+            columna_y = st.sidebar.selectbox("Selecciona la columna para el eje Y", columnas_numericas)
 
-    # Checkboxes dinámicos para cada valor único en la columna "Tipo"
-    for tipo in df["tipo"].unique():
-        st.sidebar.subheader(f"{tipo}")
-        
-        # Checkbox para filtrar por cada tipo
-        is_selected = st.sidebar.checkbox(f"Incluir {tipo}", value=True)
-        filters[tipo] = is_selected
-        
-        # Color Picker asociado al tipo
-        color = st.sidebar.color_picker(f"Color para {tipo}", "#ffffff")
-        colors[tipo] = color
+            
+            if columna_x and columna_y:
+                # Crear gráfico
+                st.subheader("Gráfico de Datos")
+                fig, ax = plt.subplots()
+                ax.plot(df[columna_x], df[columna_y], marker='o', linestyle='-')
+                ax.set_xlabel(columna_x)
+                ax.set_ylabel(columna_y)
+                ax.set_title(f"Gráfico de {columna_y} vs {columna_x}")
+                
+                # Mostrar gráfico
+                st.pyplot(fig)
+            
+        filters = {}
+        colors = {}
 
-    # Aplicar filtros según los checkboxes seleccionados
-    selected_types = [tipo for tipo, is_selected in filters.items() if is_selected]
-    filtered_df = df[df["tipo"].isin(selected_types)]
+        # Checkboxes dinámicos para cada valor único en la columna "Tipo"
+        for tipo in df["tipo"].unique():
+            st.sidebar.subheader(f"{tipo}")
+            
+            # Checkbox para filtrar por cada tipo
+            is_selected = st.sidebar.checkbox(f"Incluir {tipo}", value=True)
+            filters[tipo] = is_selected
+            
+            # Color Picker asociado al tipo
+            color = st.sidebar.color_picker(f"Color para {tipo}", "#ffffff")
+            colors[tipo] = color
 
-    # Aplicar colores dinámicos a la tabla
-    def apply_styles(row):
-        color = colors.get(row["tipo"], "#ffffff")  # Obtener el color para el tipo
-        return [f"background-color: {color}"] * len(row)
-        '''
+        # Aplicar filtros según los checkboxes seleccionados
+        selected_types = [tipo for tipo, is_selected in filters.items() if is_selected]
+        filtered_df = df[df["tipo"].isin(selected_types)]
+
+        # Aplicar colores dinámicos a la tabla
+        def apply_styles(row):
+            color = colors.get(row["tipo"], "#ffffff")  # Obtener el color para el tipo
+            return [f"background-color: {color}"] * len(row)
+            '''
 
 
 else:
