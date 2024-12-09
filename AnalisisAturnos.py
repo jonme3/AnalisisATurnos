@@ -6,12 +6,13 @@ import plotly.express as px
 from bs4 import BeautifulSoup
 import re
  
+
+
 # Función para analizar un archivo HTML
 def analiza_fichero(file) :
     try :
         #with open(path, "r", encoding="utf-8") as file:
         contenido_html = file.read()
-
         # Analiza el HTML con BeautifulSoup
         soup = BeautifulSoup(contenido_html, "lxml")
 
@@ -60,7 +61,13 @@ def analiza_fichero(file) :
 
         # Crear un DataFrame a partir de la lista de diccionarios
         df = pd.DataFrame(data)
+        # Lista de columnas que deben estar presentes
+        required_columns = [f"line_{i}" for i in range(1, 12)]
 
+        # Añadir columnas vacías si no existen
+        for col in required_columns:
+            if col not in df.columns:
+                df[col] = None  # O usa otro valor por defecto, como np.nan o una lista vacía
         # Mostrar el DataFrame
         #print(df.head(20))
 
