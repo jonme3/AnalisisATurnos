@@ -62,7 +62,7 @@ def analiza_fichero(file) :
         df = pd.DataFrame(data)
 
         # Mostrar el DataFrame
-        print(df.head(20))
+        #print(df.head(20))
 
         df['fecha'] = pd.to_datetime(df['row_id'].str.replace('row-', ''))
 
@@ -91,7 +91,7 @@ def analiza_fichero(file) :
 
         # Aplicar la función fila por fila
         df = df.apply(identificar_columna_y_dividir, axis=1)
-        print(df.head(20))
+        #print(df.head(20))
 
         df['Inicio'] = pd.to_datetime(df['fecha'].astype(str) + " " + df['Inicio_str'], errors='coerce', format='%Y-%m-%d %H:%M')
         df['Fin'] = pd.to_datetime(df['fecha'].astype(str) + " " + df['Fin_str'], errors='coerce', format='%Y-%m-%d %H:%M')
@@ -158,7 +158,7 @@ def analiza_fichero(file) :
 
         # Eliminar las columnas del DataFrame
         df = df.drop(columns=columnas_a_eliminar)
-        print(df.head(50))
+        #print(df.head(50))
 
         return False, df
 
@@ -186,7 +186,7 @@ st.sidebar.header("Opciones")
 
 # Cargar archivo desde la barra lateral
 uploaded_file = st.sidebar.file_uploader("Selecciona un archivo html", type=["html"])
-print(uploaded_file)
+#print(uploaded_file)
 # Crear el panel principal a la derecha
 if uploaded_file is not None:
     st.session_state.show_image = False
@@ -202,8 +202,9 @@ if uploaded_file is not None:
     #else: 
     #    df_filtered = df
     df_filtered = df
-        
     st.dataframe(df_filtered, use_container_width=True)
+
+    st.write("Sumas totales agrupadas")
     totales = df.groupby(['class', 'tipo'], as_index=False)['horas'].sum()
     st.dataframe(totales)
     tabla_pivot_filt = df_filtered.pivot_table(
@@ -213,9 +214,10 @@ if uploaded_file is not None:
         aggfunc='sum',  # Agregación: suma
         fill_value=0  # Rellenar valores faltantes con 0
     )
+    st.write("Totales por semana")
     st.dataframe(tabla_pivot_filt)
        
-    filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique())
+    filtro_clases = st.sidebar.multiselect(f"Selecciona valores de class", df["class"].unique(), default=["time-checkin"])
     #columnas_numericas = df.select_dtypes(include='number').columns.tolist()
     #columnas = df.columns.tolist()
 
@@ -239,7 +241,9 @@ if uploaded_file is not None:
             aggfunc='sum',  # Agregación: suma
             fill_value=0  # Rellenar valores faltantes con 0
         )
+        st.write("Sumas totales agrupadas")
         st.dataframe(totales_filt)
+        st.write("Totales por semana")
         st.dataframe(tabla_pivot_filt)
 
     # Selección de columnas para gráficos
