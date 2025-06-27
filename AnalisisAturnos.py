@@ -85,10 +85,21 @@ def analiza_fichero(fichero_html):
                     "horas": horas
                 })
 
+    # Crear dataframe de datos
+    df_data = pd.DataFrame(data)
+
+    # Si df_data está vacío, crea las columnas para evitar KeyError
+    if df_data.empty:
+        df_data = pd.DataFrame(columns=["fecha", "horas"])
+
+    # Agrupar por fecha si no está vacío
+    if not df_data.empty:
+        df_summary = df_data.groupby("fecha").agg({"horas": "sum"}).reset_index()
+    else:
+        df_summary = pd.DataFrame(columns=["fecha", "horas"])
+
     # Crear dataframe de todas las fechas analizadas
     df_fechas = pd.DataFrame(sorted(set(fechas)), columns=["fecha"])
-    df_data = pd.DataFrame(data)
-    df_summary = df_data.groupby("fecha").agg({"horas": "sum"}).reset_index()
 
     # Unir para tener días sin fichaje con 0h
     df_full = pd.merge(df_fechas, df_summary, on="fecha", how="left").fillna(0)
