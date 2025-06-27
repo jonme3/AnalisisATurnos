@@ -2,7 +2,7 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 st.title("Análisis de Horas desde archivo de ATurnos (.html)")
 
@@ -79,7 +79,7 @@ def analiza_fichero(fichero_html):
                     "tipo": tipo
                 })
 
-    # Crear dataframe con todas las fechas entre mínimo y máximo
+    # Crear dataframe de todas las fechas entre mínimo y máximo
     if fechas_totales:
         fecha_min = min(fechas_totales)
         fecha_max = max(fechas_totales)
@@ -102,7 +102,12 @@ def analiza_fichero(fichero_html):
 
     # Calcular horas teóricas y desviación
     df_final['horas_teoricas'] = df_final['fecha'].apply(calcula_teoricas)
-    df_final['desviacion'] = df_final.get('real', 0) - df_final['horas_teoricas']
+
+    # Si la columna 'real' no existe, añadirla como 0
+    if 'real' not in df_final.columns:
+        df_final['real'] = 0
+
+    df_final['desviacion'] = df_final['real'] - df_final['horas_teoricas']
 
     # Añadir columna de semana
     df_final["semana"] = df_final["fecha"].apply(lambda x: x.isocalendar()[1])
