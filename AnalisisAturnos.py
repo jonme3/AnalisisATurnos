@@ -2,7 +2,7 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 st.title("Análisis de Horas desde archivo de ATurnos (.html)")
 
@@ -30,13 +30,11 @@ def analiza_fichero(fichero_html):
     contenido = fichero_html.read()
     soup = BeautifulSoup(contenido, "html.parser")
 
-    # Extraer todas las filas de días para tener todas las fechas
     filas = soup.find_all("tr", class_="item-user")
     fechas = []
     data = []
 
     for tr in filas:
-        # Extraer la fecha
         fecha_td = tr.find("td")
         if not fecha_td:
             continue
@@ -48,28 +46,19 @@ def analiza_fichero(fichero_html):
 
         fechas.append(fecha)
 
-        # Detectar si es festivo o fin de semana
         tr_classes = tr.get("class", [])
-        is_festive = ("festive" in tr_classes or "weekend" in tr_classes)
-
-        # Si es festivo, no computar
-        if is_festive:
+        if "festive" in tr_classes or "weekend" in tr_classes:
             continue
 
-        # Extraer barras de ese día
         barras = tr.find_all("div", class_="progress-bar")
         for barra in barras:
             clase = barra.get("class", [])
             tooltip = barra.get("data-original-title", "")
 
-            # Detectar vacaciones o absentismo en la barra
             if any(c in clase for c in ["planned_holidays", "leave_holidays", "leave", "absenteeism"]):
                 continue
 
-            # Solo analizar fichajes reales (time-checkin)
-            if not any("time-checkin" in c for c in clase):
-                continue
-
+            # Buscar horas en el tooltip
             match = re.search(r"(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})", tooltip)
             if match:
                 inicio_str, fin_str = match.groups()
@@ -80,65 +69,61 @@ def analiza_fichero(fichero_html):
                 else:
                     horas = 0
 
+                tipo = "planned" if "planned" in clase else ("real" if "time-checkin" in clase else "otro")
+
                 data.append({
                     "fecha": fecha,
-                    "horas": horas
+                    "inicio_str": inicio_str,
+                    "fin_str": fin_str,
+                    "horas": horas,
+                    "tipo": tipo
                 })
 
-    # Crear dataframe de datos
-    df_data = pd.DataFrame(data)
+    # Crear dataframe de resultados
+    df = pd.DataFrame(data)
 
-    # Si df_data está vacío, crea las columnas para evitar KeyError
-    if df_data.empty:
-        df_data = pd.DataFrame(columns=["fecha", "horas"])
+    if df.empty:
+        return True, "No se pudieron extraer datos de horarios.", None, None, None
 
-    # Agrupar por fecha si no está vacío
-    if not df_data.empty:
-        df_summary = df_data.groupby("fecha").agg({"horas": "sum"}).reset_index()
-    else:
-        df_summary = pd.DataFrame(columns=["fecha", "horas"])
+    # Resumen de horas por día y tipo
+    df_summary = df.groupby(['fecha', 'tipo'])['horas'].sum().unstack(fill_value=0).reset_index()
 
-    # Crear dataframe de todas las fechas analizadas
-    df_fechas = pd.DataFrame(sorted(set(fechas)), columns=["fecha"])
+    # Añadir horas teóricas y desviación
+    df_summary['horas_teoricas'] = df_summary['fecha'].apply(calcula_teoricas)
+    df_summary['horas_reales'] = df_summary.get('real', 0)
+    df_summary['desviacion'] = df_summary['horas_reales'] - df_summary['horas_teoricas']
 
-    # Unir para tener días sin fichaje con 0h
-    df_full = pd.merge(df_fechas, df_summary, on="fecha", how="left").fillna(0)
-
-    # Calcular horas teóricas y desviación
-    df_full["horas_teoricas"] = df_full["fecha"].apply(calcula_teoricas)
-    df_full["desviacion"] = df_full["horas"] - df_full["horas_teoricas"]
-
-    # Resumen semanal completo
-    df_full["semana"] = df_full["fecha"].apply(lambda x: x.isocalendar()[1])
-    df_semana = df_full.groupby("semana").agg({
-        "horas": "sum",
+    # Resumen semanal
+    df_summary["semana"] = df_summary["fecha"].apply(lambda x: x.isocalendar()[1])
+    df_semana = df_summary.groupby("semana").agg({
+        "horas_reales": "sum",
         "horas_teoricas": "sum"
     }).reset_index()
-    df_semana["desviacion"] = df_semana["horas"] - df_semana["horas_teoricas"]
+    df_semana["desviacion"] = df_semana["horas_reales"] - df_semana["horas_teoricas"]
 
-    return False, "Análisis completado con éxito.", df_data, df_full, df_semana
+    return False, "Análisis completado con éxito.", df, df_summary, df_semana
 
 # Interfaz Streamlit
 uploaded_file = st.file_uploader("Sube el archivo HTML exportado desde ATurnos", type=["html"])
 
 if uploaded_file:
-    error, mensaje, df_data, df_full, df_semana = analiza_fichero(uploaded_file)
+    error, mensaje, df, df_summary, df_semana = analiza_fichero(uploaded_file)
 
     if error:
         st.error(mensaje)
     else:
         st.success(mensaje)
-        st.subheader("Datos de fichajes extraídos:")
-        st.dataframe(df_data)
+        st.subheader("Datos extraídos:")
+        st.dataframe(df)
 
-        st.subheader("Resumen por día (trabajado vs teórico):")
-        st.dataframe(df_full)
+        st.subheader("Resumen por día (planificado, real, teórico):")
+        st.dataframe(df_summary)
 
         st.subheader("Resumen por semana (trabajado vs teórico):")
         st.dataframe(df_semana)
 
         st.subheader("📊 Desviación de horas por día")
-        st.bar_chart(df_full.set_index("fecha")["desviacion"])
+        st.bar_chart(df_summary.set_index("fecha")["desviacion"])
 
         st.subheader("📊 Desviación de horas por semana")
         st.bar_chart(df_semana.set_index("semana")["desviacion"])
