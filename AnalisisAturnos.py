@@ -2,7 +2,7 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 st.title("Análisis de Horas desde archivo de ATurnos (.html)")
 
@@ -31,8 +31,8 @@ def analiza_fichero(fichero_html):
     soup = BeautifulSoup(contenido, "html.parser")
 
     filas = soup.find_all("tr", class_="item-user")
-    fechas = []
     data = []
+    fechas_totales = []
 
     for tr in filas:
         fecha_td = tr.find("td")
@@ -44,7 +44,7 @@ def analiza_fichero(fichero_html):
         except:
             continue
 
-        fechas.append(fecha)
+        fechas_totales.append(fecha)
 
         tr_classes = tr.get("class", [])
         if "festive" in tr_classes or "weekend" in tr_classes:
@@ -79,35 +79,48 @@ def analiza_fichero(fichero_html):
                     "tipo": tipo
                 })
 
+    # Crear dataframe con todas las fechas entre mínimo y máximo
+    if fechas_totales:
+        fecha_min = min(fechas_totales)
+        fecha_max = max(fechas_totales)
+        rango_fechas = pd.date_range(fecha_min, fecha_max, freq='D').date
+        df_fechas = pd.DataFrame(rango_fechas, columns=["fecha"])
+    else:
+        return True, "No se encontraron fechas en el archivo.", None, None, None
+
     # Crear dataframe de resultados
     df = pd.DataFrame(data)
 
-    if df.empty:
-        return True, "No se pudieron extraer datos de horarios.", None, None, None
+    # Calcular horas trabajadas por fecha y tipo si hay datos
+    if not df.empty:
+        df_summary = df.groupby(['fecha', 'tipo'])['horas'].sum().unstack(fill_value=0).reset_index()
+    else:
+        df_summary = pd.DataFrame(columns=["fecha", "planned", "real", "otro"])
 
-    # Resumen de horas por día y tipo
-    df_summary = df.groupby(['fecha', 'tipo'])['horas'].sum().unstack(fill_value=0).reset_index()
+    # Unir con el dataframe completo de fechas para incluir días sin fichaje
+    df_final = pd.merge(df_fechas, df_summary, on="fecha", how="left").fillna(0)
 
-    # Añadir horas teóricas y desviación
-    df_summary['horas_teoricas'] = df_summary['fecha'].apply(calcula_teoricas)
-    df_summary['horas_reales'] = df_summary.get('real', 0)
-    df_summary['desviacion'] = df_summary['horas_reales'] - df_summary['horas_teoricas']
+    # Calcular horas teóricas y desviación
+    df_final['horas_teoricas'] = df_final['fecha'].apply(calcula_teoricas)
+    df_final['desviacion'] = df_final.get('real', 0) - df_final['horas_teoricas']
 
-    # Resumen semanal
-    df_summary["semana"] = df_summary["fecha"].apply(lambda x: x.isocalendar()[1])
-    df_semana = df_summary.groupby("semana").agg({
-        "horas_reales": "sum",
+    # Añadir columna de semana
+    df_final["semana"] = df_final["fecha"].apply(lambda x: x.isocalendar()[1])
+
+    # Resumen semanal completo
+    df_semana = df_final.groupby("semana").agg({
+        "real": "sum",
         "horas_teoricas": "sum"
     }).reset_index()
-    df_semana["desviacion"] = df_semana["horas_reales"] - df_semana["horas_teoricas"]
+    df_semana["desviacion"] = df_semana["real"] - df_semana["horas_teoricas"]
 
-    return False, "Análisis completado con éxito.", df, df_summary, df_semana
+    return False, "Análisis completado con éxito.", df, df_final, df_semana
 
 # Interfaz Streamlit
 uploaded_file = st.file_uploader("Sube el archivo HTML exportado desde ATurnos", type=["html"])
 
 if uploaded_file:
-    error, mensaje, df, df_summary, df_semana = analiza_fichero(uploaded_file)
+    error, mensaje, df, df_final, df_semana = analiza_fichero(uploaded_file)
 
     if error:
         st.error(mensaje)
@@ -117,13 +130,13 @@ if uploaded_file:
         st.dataframe(df)
 
         st.subheader("Resumen por día (planificado, real, teórico):")
-        st.dataframe(df_summary)
+        st.dataframe(df_final)
 
         st.subheader("Resumen por semana (trabajado vs teórico):")
         st.dataframe(df_semana)
 
         st.subheader("📊 Desviación de horas por día")
-        st.bar_chart(df_summary.set_index("fecha")["desviacion"])
+        st.bar_chart(df_final.set_index("fecha")["desviacion"])
 
         st.subheader("📊 Desviación de horas por semana")
         st.bar_chart(df_semana.set_index("semana")["desviacion"])
